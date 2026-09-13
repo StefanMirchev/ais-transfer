@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIS — Invoices that move on their own</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#E8E3D4;
+    --paper-raised:#F1EDE1;
+    --ink:#211D16;
+    --ink-soft:#5B564A;
+    --line:#C7BFA9;
+    --seller:#9A5A26;
+    --seller-soft:#EADFC9;
+    --purchaser:#276370;
+    --purchaser-soft:#DCE7E5;
+    --focus:#1B4FD6;
+    --radius:3px;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    *{animation:none !important; transition:none !important;}
+  }
+
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"IBM Plex Sans", -apple-system, Segoe UI, sans-serif;
+    font-size:16px;
+    line-height:1.6;
+  }
+
+  a{color:inherit;}
+  :focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
+
+  h1,h2,h3{
+    font-family:"Fraunces", Georgia, serif;
+    font-weight:500;
+    line-height:1.15;
+    margin:0;
+  }
+
+  .wrap{max-width:1040px; margin:0 auto; padding:0 28px;}
+  .measure{max-width:62ch;}
+
+  code, .mono{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:0.92em;
+  }
+
+  /* ---------- Header ---------- */
+  header{
+    position:sticky; top:0; z-index:20;
+    background:var(--paper);
+    border-bottom:1px solid var(--line);
+  }
+  .nav-row{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 0;
+  }
+  .brand{
+    display:flex; align-items:baseline; gap:10px;
+    font-family:"Fraunces", serif; font-size:1.35rem; font-weight:600;
+    text-decoration:none; color:var(--ink);
+  }
+  .brand small{
+    font-family:"IBM Plex Sans", sans-serif;
+    font-size:0.62rem; font-weight:500;
+    letter-spacing:0.02em;
+    color:var(--ink-soft);
+  }
+  nav ul{
+    list-style:none; display:flex; gap:28px; margin:0; padding:0;
+  }
+  nav a{
+    text-decoration:none; font-size:0.94rem; color:var(--ink-soft);
+    border-bottom:1px solid transparent;
+    padding-bottom:2px;
+  }
+  nav a:hover{color:var(--ink); border-bottom-color:var(--line);}
+  .nav-toggle{display:none;}
+
+  @media (max-width:760px){
+    nav ul{
+      display:none;
+      position:absolute; left:0; right:0; top:100%;
+      background:var(--paper-raised);
+      border-bottom:1px solid var(--line);
+      flex-direction:column; gap:0; padding:8px 28px 18px;
+    }
+    nav ul.open{display:flex;}
+    nav li{border-top:1px solid var(--line);}
+    nav a{display:block; padding:12px 0;}
+    .nav-toggle{
+      display:inline-flex; background:none; border:1px solid var(--line);
+      border-radius:var(--radius); padding:8px 12px; font-size:0.9rem;
+      font-family:inherit; color:var(--ink); cursor:pointer;
+    }
+  }
+
+  /* ---------- Hero ---------- */
+  .hero{padding:76px 0 56px;}
+  .hero h1{
+    font-size:clamp(2.1rem, 4vw, 3.1rem);
+    max-width:15ch;
+    letter-spacing:-0.01em;
+  }
+  .hero p.lede{
+    margin-top:22px;
+    font-size:1.14rem;
+    color:var(--ink-soft);
+    max-width:52ch;
+  }
+  .hero-actions{display:flex; gap:14px; margin-top:32px; flex-wrap:wrap;}
+  .btn{
+    display:inline-block;
+    padding:12px 22px;
+    border-radius:var(--radius);
+    text-decoration:none;
+    font-size:0.95rem;
+    font-weight:500;
+    border:1px solid var(--ink);
+  }
+  .btn-primary{background:var(--ink); color:var(--paper);}
+  .btn-primary:hover{background:#3a3427;}
+  .btn-ghost{background:transparent; color:var(--ink); border-color:var(--line);}
+  .btn-ghost:hover{border-color:var(--ink);}
+
+  /* ---------- Flow diagram ---------- */
+  .flow{
+    margin-top:64px;
+    display:flex; align-items:stretch; gap:0;
+    border:1px solid var(--line);
+    background:var(--paper-raised);
+    border-radius:var(--radius);
+    overflow:hidden;
+  }
+  .flow-node{
+    flex:1;
+    padding:26px 22px;
+    display:flex; flex-direction:column; gap:6px;
+  }
+  .flow-node.seller{background:var(--seller-soft); border-right:1px solid var(--line);}
+  .flow-node.purchaser{background:var(--purchaser-soft); border-left:1px solid var(--line);}
+  .flow-tag{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:0.72rem;
+    letter-spacing:0.03em;
+    color:var(--ink-soft);
+  }
+  .flow-name{font-family:"Fraunces", serif; font-size:1.15rem;}
+  .flow-node.seller .flow-tag, .flow-node.seller .flow-name{color:var(--seller);}
+  .flow-node.purchaser .flow-tag, .flow-node.purchaser .flow-name{color:var(--purchaser);}
+  .flow-center{
+    flex:0 0 auto;
+    width:120px;
+    display:flex; align-items:center; justify-content:center;
+    position:relative;
+    padding:0 6px;
+  }
+  .flow-center svg{width:100%; height:36px;}
+  .flow-center .flow-name{
+    position:absolute; bottom:10px; font-size:0.78rem; text-align:center;
+    color:var(--ink-soft);
+  }
+  @media (max-width:680px){
+    .flow{flex-direction:column;}
+    .flow-node.seller{border-right:none; border-bottom:1px solid var(--line);}
+    .flow-node.purchaser{border-left:none; border-top:1px solid var(--line);}
+    .flow-center{width:auto; padding:18px 0;}
+    .flow-center svg{width:36px; height:100%; transform:rotate(90deg);}
+    .flow-center .flow-name{position:static; margin-top:6px;}
+  }
+
+  /* ---------- Sections ---------- */
+  section{padding:64px 0;}
+  section + section{border-top:1px solid var(--line);}
+  .eyebrow{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:0.78rem;
+    color:var(--ink-soft);
+    margin-bottom:10px;
+  }
+  .section-head{margin-bottom:44px;}
+  .section-head h2{font-size:clamp(1.6rem, 3vw, 2.1rem);}
+  .section-head p{margin-top:14px; color:var(--ink-soft); max-width:56ch;}
+
+  /* ---------- How it works ---------- */
+  .steps{border-top:1px solid var(--line);}
+  .step{
+    display:grid;
+    grid-template-columns:64px 1fr;
+    gap:20px;
+    padding:22px 0;
+    border-bottom:1px solid var(--line);
+    align-items:baseline;
+  }
+  .step-num{
+    font-family:"Fraunces", serif;
+    font-size:1.6rem;
+    color:var(--ink-soft);
+  }
+  .step h3{font-size:1.08rem; font-weight:600; font-family:"IBM Plex Sans", sans-serif; margin-bottom:6px;}
+  .step p{margin:0; color:var(--ink-soft); max-width:58ch;}
+
+  /* ---------- Menu / features ---------- */
+  .menu-list{border-top:1px solid var(--line);}
+  .menu-row{
+    display:grid;
+    grid-template-columns:48px 1fr;
+    gap:20px;
+    padding:20px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .menu-row .menu-num{
+    font-family:"IBM Plex Mono", monospace;
+    color:var(--ink-soft);
+    padding-top:2px;
+  }
+  .menu-row h3{font-size:1.02rem; font-weight:600; font-family:"IBM Plex Sans", sans-serif; margin-bottom:4px;}
+  .menu-row p{margin:0; color:var(--ink-soft); max-width:58ch;}
+
+  .also-inside{
+    margin-top:28px;
+    padding-top:24px;
+    border-top:1px dashed var(--line);
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:24px;
+  }
+  @media (max-width:680px){.also-inside{grid-template-columns:1fr;}}
+  .also-inside h4{
+    font-family:"IBM Plex Sans", sans-serif;
+    font-size:0.95rem; font-weight:600; margin:0 0 6px;
+  }
+  .also-inside p{margin:0; color:var(--ink-soft); font-size:0.95rem;}
+
+  /* ---------- Files table ---------- */
+  table.files{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:8px;
+  }
+  table.files th{
+    text-align:left;
+    font-family:"IBM Plex Sans", sans-serif;
+    font-size:0.78rem;
+    letter-spacing:0.02em;
+    color:var(--ink-soft);
+    font-weight:500;
+    padding:0 0 10px;
+    border-bottom:1px solid var(--line);
+  }
+  table.files td{
+    padding:16px 18px 16px 0;
+    border-bottom:1px solid var(--line);
+    vertical-align:top;
+  }
+  table.files td.fname{white-space:nowrap;}
+  .quota-note{
+    margin-top:28px;
+    padding:20px 22px;
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+  }
+  .quota-note p{margin:0; color:var(--ink-soft);}
+  .quota-terms{
+    display:flex; gap:28px; margin-top:14px; flex-wrap:wrap;
+  }
+  .quota-terms span{font-family:"IBM Plex Mono", monospace; font-size:0.82rem; color:var(--ink);}
+
+  /* ---------- About ---------- */
+  .about-grid{
+    display:grid;
+    grid-template-columns:1.1fr 0.9fr;
+    gap:52px;
+  }
+  @media (max-width:760px){.about-grid{grid-template-columns:1fr;}}
+  .about-grid p{color:var(--ink-soft); margin-top:16px;}
+  .about-grid p:first-of-type{margin-top:0;}
+  .principles{list-style:none; margin:0; padding:0;}
+  .principles li{
+    padding:16px 0;
+    border-top:1px solid var(--line);
+  }
+  .principles li:last-child{border-bottom:1px solid var(--line);}
+  .principles h4{
+    font-family:"IBM Plex Sans", sans-serif; font-size:0.98rem; font-weight:600; margin:0 0 4px;
+  }
+  .principles p{margin:0; color:var(--ink-soft); font-size:0.94rem;}
+
+  /* ---------- FAQ ---------- */
+  details{
+    border-bottom:1px solid var(--line);
+    padding:18px 0;
+  }
+  details:first-of-type{border-top:1px solid var(--line);}
+  summary{
+    cursor:pointer;
+    font-family:"IBM Plex Sans", sans-serif;
+    font-weight:600;
+    list-style:none;
+    display:flex; justify-content:space-between; align-items:center;
+    gap:16px;
+  }
+  summary::-webkit-details-marker{display:none;}
+  summary::after{
+    content:"+";
+    font-family:"Fraunces", serif;
+    font-size:1.3rem;
+    color:var(--ink-soft);
+    flex:0 0 auto;
+  }
+  details[open] summary::after{content:"–";}
+  details p{color:var(--ink-soft); margin:12px 0 2px; max-width:58ch;}
+
+  /* ---------- Contact ---------- */
+  .contact-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:52px;
+  }
+  @media (max-width:760px){.contact-grid{grid-template-columns:1fr;}}
+  .contact-info h3{font-size:1.1rem; margin-bottom:12px;}
+  .contact-info p{color:var(--ink-soft); margin:0 0 24px;}
+  .contact-line{
+    display:flex; justify-content:space-between;
+    padding:12px 0;
+    border-top:1px solid var(--line);
+    font-size:0.95rem;
+  }
+  .contact-line:last-child{border-bottom:1px solid var(--line);}
+  .contact-line span:first-child{color:var(--ink-soft);}
+
+  form{display:flex; flex-direction:column; gap:16px;}
+  label{font-size:0.86rem; color:var(--ink-soft); display:block; margin-bottom:6px;}
+  input, textarea{
+    width:100%;
+    font-family:inherit;
+    font-size:0.98rem;
+    padding:11px 13px;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    background:var(--paper-raised);
+    color:var(--ink);
+  }
+  textarea{resize:vertical; min-height:110px;}
+  input:focus, textarea:focus{border-color:var(--ink);}
+  .form-submit{align-self:flex-start; margin-top:4px;}
+
+  /* ---------- Footer ---------- */
+  footer{
+    border-top:1px solid var(--line);
+    padding:36px 0;
+  }
+  .footer-row{
+    display:flex; justify-content:space-between; align-items:center;
+    gap:16px; flex-wrap:wrap;
+    font-size:0.86rem; color:var(--ink-soft);
+  }
+  .footer-links{display:flex; gap:20px; list-style:none; margin:0; padding:0;}
+  .footer-links a{text-decoration:none; color:var(--ink-soft);}
+  .footer-links a:hover{color:var(--ink);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav-row">
+    <a class="brand" href="#top">AIS <small>Account Intelligence Stream</small></a>
+    <button class="nav-toggle" aria-expanded="false" aria-controls="primary-nav" onclick="const n=document.getElementById('primary-nav'); const open=n.classList.toggle('open'); this.setAttribute('aria-expanded', open);">Menu</button>
+    <nav>
+      <ul id="primary-nav">
+        <li><a href="#how">How it works</a></li>
+        <li><a href="#inside">Inside AIS</a></li>
+        <li><a href="#files">Files &amp; IDs</a></li>
+        <li><a href="#about">About</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="wrap">
+      <h1>Invoices that move on their own, Seller to Purchaser.</h1>
+      <p class="lede">AIS carries invoices back and forth between the businesses you work with. No emailing PDFs, no logging into a portal, no retyping numbers by hand — you click one option, and it's on its way.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#how">See how it works</a>
+        <a class="btn btn-ghost" href="#inside">Look inside the Main Menu</a>
+      </div>
+
+      <div class="flow" role="img" aria-label="Diagram: a Seller sends an invoice through AIS to a Purchaser">
+        <div class="flow-node seller">
+          <span class="flow-tag">SENDS</span>
+          <span class="flow-name">Seller</span>
+        </div>
+        <div class="flow-center">
+          <svg viewBox="0 0 120 36" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            <line x1="6" y1="18" x2="114" y2="18" stroke="#5B564A" stroke-width="1.5"/>
+            <polygon points="114,12 122,18 114,24" fill="#5B564A"/>
+          </svg>
+          <span class="flow-name">AIS</span>
+        </div>
+        <div class="flow-node purchaser">
+          <span class="flow-tag">RECEIVES</span>
+          <span class="flow-name">Purchaser</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="how">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">How it works</p>
+        <h2>Everything revolves around one pair: a Seller and a Purchaser.</h2>
+        <p>You keep a list of the businesses on the other side of your invoices, and AIS uses that list to know who should receive what — and where to bring in what's been sent to you.</p>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <span class="step-num">1</span>
+          <div>
+            <h3>Prepare</h3>
+            <p>You save an invoice for a Purchaser the way you always have. Nothing changes about how the invoice itself gets made.</p>
+          </div>
+        </div>
+        <div class="step">
+          <span class="step-num">2</span>
+          <div>
+            <h3>Upload</h3>
+            <p>Choose <strong>Upload Invoices</strong> from the Main Menu. AIS gets everything ready and sends each invoice to the right Purchaser.</p>
+          </div>
+        </div>
+        <div class="step">
+          <span class="step-num">3</span>
+          <div>
+            <h3>Deliver</h3>
+            <p>AIS places the invoice where that Purchaser will look for it, sorted by who it came from — no shared inbox, no sorting by hand.</p>
+          </div>
+        </div>
+        <div class="step">
+          <span class="step-num">4</span>
+          <div>
+            <h3>Receive</h3>
+            <p>The Purchaser brings it in with <strong>Download Invoices</strong> — by hand, or automatically at set times of day — and it's on their computer, ready to file.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INSIDE AIS -->
+  <section id="inside">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">Inside AIS</p>
+        <h2>The Main Menu, and what each option does.</h2>
+        <p>The Main Menu is the small window that opens when you start AIS. It stays out of the way in the corner of your screen — every option is one double-click away. Point at any option and press <span class="mono">F1</span> for a reminder of what it does.</p>
+      </div>
+
+      <div class="menu-list">
+        <div class="menu-row">
+          <span class="menu-num">1</span>
+          <div><h3>List Seller</h3><p>Keep the businesses you send invoices to — names, phone, email, and status at a glance.</p></div>
+        </div>
+        <div class="menu-row">
+          <span class="menu-num">2</span>
+          <div><h3>List Purchaser</h3><p>The same list, the other direction: the businesses that send invoices to you.</p></div>
+        </div>
+        <div class="menu-row">
+          <span class="menu-num">3</span>
+          <div><h3>Upload Invoices</h3><p>Sends out anything you've prepared for the Purchasers on your Seller list, and tells you when it's done.</p></div>
+        </div>
+        <div class="menu-row">
+          <span class="menu-num">4</span>
+          <div><h3>Download Invoices</h3><p>Brings in anything your Sellers have sent you, sorted by who it belongs to.</p></div>
+        </div>
+        <div class="menu-row">
+          <span class="menu-num">5</span>
+          <div><h3>Automatic Download Invoices</h3><p>Turns hands-off receiving on or off — AIS checks for new invoices at set times, without a click from you.</p></div>
+        </div>
+      </div>
+
+      <div class="also-inside">
+        <div>
+          <h4>Messages</h4>
+          <p>Leave a short note for any Seller or Purchaser straight from their list. A small red marker lets you know when one is waiting to be read.</p>
+        </div>
+        <div>
+          <h4>Checking your space</h4>
+          <p><strong>Check Loaded</strong> shows the Load Limit, Consumption, and room still free for any Seller — so a full mailbox never comes as a surprise.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FILES & IDS -->
+  <section id="files">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">Files &amp; IDs</p>
+        <h2>Four kinds of files. Nothing else gets through.</h2>
+        <p>You don't need to remember any of this to use AIS — but if you ever see one of these names on disk, here's what it is. Anything that doesn't match is treated as clutter and removed, on your computer and wherever else it was found.</p>
+      </div>
+
+      <table class="files">
+        <thead>
+          <tr><th>What it looks like</th><th>What it is</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="fname"><span class="mono">1234567890.pdf</span><br><span class="mono" style="color:var(--ink-soft); font-size:0.8em;">10 digits + .pdf</span></td>
+            <td>An invoice.</td>
+          </tr>
+          <tr>
+            <td class="fname"><span class="mono">1234567890.txt</span><br><span class="mono" style="color:var(--ink-soft); font-size:0.8em;">10 digits + .txt</span></td>
+            <td>The item details for that same invoice, when there are any.</td>
+          </tr>
+          <tr>
+            <td class="fname"><span class="mono">12345678.txt</span><br><span class="mono" style="color:var(--ink-soft); font-size:0.8em;">8 digits + .txt</span></td>
+            <td>A list of invoices.</td>
+          </tr>
+          <tr>
+            <td class="fname"><span class="mono">message.txt</span></td>
+            <td>A message between a Seller and a Purchaser.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="quota-note">
+        <p>Every Seller is given a set amount of space to send invoices in. <strong>Check Loaded</strong> breaks it down into three numbers:</p>
+        <div class="quota-terms">
+          <span>LOAD LIMIT — total space given</span>
+          <span>CONSUMPTION — space already used</span>
+          <span>NOT LOADED — room still free</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section id="about">
+    <div class="wrap about-grid">
+      <div>
+        <p class="eyebrow">About</p>
+        <h2>Built for the part of the job nobody enjoys.</h2>
+        <p>Sending and chasing invoices eats up time that has nothing to do with actually running a business. AIS exists to take that one job off your desk: it carries invoices between the people who send them and the people who need them, on a schedule, without anyone opening an email client.</p>
+        <p>It's built to sit quietly in the corner of a screen. There's no dashboard to learn, no login to remember — just a short list of who you do business with, and a handful of options that do exactly what they say.</p>
+      </div>
+      <ul class="principles">
+        <li>
+          <h4>Plain by design</h4>
+          <p>Every option in the Main Menu does one thing, named for what it does — not how it's built.</p>
+        </li>
+        <li>
+          <h4>Nothing to lose track of</h4>
+          <p>Only four kinds of files ever move through AIS. Anything else is treated as clutter.</p>
+        </li>
+        <li>
+          <h4>Help where you're standing</h4>
+          <p>Point at anything and press F1 — a short note explains it on the spot.</p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">Questions</p>
+        <h2>Before you get started</h2>
+      </div>
+
+      <details open>
+        <summary>Do I need to be a Seller or a Purchaser to use AIS?</summary>
+        <p>Either, or both. If you send invoices, you'll keep a Seller list. If you receive them, you'll keep a Purchaser list. Many businesses do both at once.</p>
+      </details>
+      <details>
+        <summary>What happens if a Seller's space runs out?</summary>
+        <p>AIS tells you exactly which invoices couldn't be sent and by how much the space was exceeded, so you can free up room or ask for more.</p>
+      </details>
+      <details>
+        <summary>Can invoices get lost or misfiled?</summary>
+        <p>AIS only recognizes four file patterns and sorts everything by the Seller and Purchaser it belongs to. Anything that doesn't match those patterns is removed rather than left to cause confusion later.</p>
+      </details>
+      <details>
+        <summary>Do I have to check for new invoices myself?</summary>
+        <p>No — turn on Automatic Download Invoices and AIS checks for you at set times each day. You can switch it off again just as easily.</p>
+      </details>
+      <details>
+        <summary>Where do received invoices end up?</summary>
+        <p>On your own computer, sorted by who sent them. AIS doesn't delete anything you've received — it just reminds you to move them into your own archive from time to time.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section id="contact">
+    <div class="wrap contact-grid">
+      <div class="contact-info">
+        <p class="eyebrow">Contact</p>
+        <h3>Talk to us before you start.</h3>
+        <p>If you're setting up your first Seller or Purchaser list, or need space added to an existing one, reach out and we'll walk through it with you.</p>
+        <div class="contact-line"><span>Support</span><span>support@ais-invoices.example</span></div>
+        <div class="contact-line"><span>Sales</span><span>hello@ais-invoices.example</span></div>
+        <div class="contact-line"><span>Hours</span><span>Mon–Fri, 9:00–17:00</span></div>
+        <div class="contact-line"><span>Already a user?</span><span>Message us from inside AIS</span></div>
+      </div>
+      <form action="mailto:hello@ais-invoices.example" method="post" enctype="text/plain">
+        <div>
+          <label for="name">Name</label>
+          <input type="text" id="name" name="name" required>
+        </div>
+        <div>
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required>
+        </div>
+        <div>
+          <label for="message">Message</label>
+          <textarea id="message" name="message" required></textarea>
+        </div>
+        <button class="btn btn-primary form-submit" type="submit">Send message</button>
+      </form>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap footer-row">
+    <span>AIS — Account Intelligence Stream</span>
+    <ul class="footer-links">
+      <li><a href="#how">How it works</a></li>
+      <li><a href="#inside">Inside AIS</a></li>
+      <li><a href="#files">Files &amp; IDs</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </div>
+</footer>
+
+</body>
+</html>
