@@ -1,658 +1,1009 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AIS — Invoices that move on their own</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>
-  :root{
-    --paper:#E8E3D4;
-    --paper-raised:#F1EDE1;
-    --ink:#211D16;
-    --ink-soft:#5B564A;
-    --line:#C7BFA9;
-    --seller:#9A5A26;
-    --seller-soft:#EADFC9;
-    --purchaser:#276370;
-    --purchaser-soft:#DCE7E5;
-    --focus:#1B4FD6;
-    --radius:3px;
-  }
-
-  *{box-sizing:border-box;}
-  html{scroll-behavior:smooth;}
-  @media (prefers-reduced-motion: reduce){
-    html{scroll-behavior:auto;}
-    *{animation:none !important; transition:none !important;}
-  }
-
-  body{
-    margin:0;
-    background:var(--paper);
-    color:var(--ink);
-    font-family:"IBM Plex Sans", -apple-system, Segoe UI, sans-serif;
-    font-size:16px;
-    line-height:1.6;
-  }
-
-  a{color:inherit;}
-  :focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
-
-  h1,h2,h3{
-    font-family:"Fraunces", Georgia, serif;
-    font-weight:500;
-    line-height:1.15;
-    margin:0;
-  }
-
-  .wrap{max-width:1040px; margin:0 auto; padding:0 28px;}
-  .measure{max-width:62ch;}
-
-  code, .mono{
-    font-family:"IBM Plex Mono", monospace;
-    font-size:0.92em;
-  }
-
-  /* ---------- Header ---------- */
-  header{
-    position:sticky; top:0; z-index:20;
-    background:var(--paper);
-    border-bottom:1px solid var(--line);
-  }
-  .nav-row{
-    display:flex; align-items:center; justify-content:space-between;
-    padding:18px 0;
-  }
-  .brand{
-    display:flex; align-items:baseline; gap:10px;
-    font-family:"Fraunces", serif; font-size:1.35rem; font-weight:600;
-    text-decoration:none; color:var(--ink);
-  }
-  .brand small{
-    font-family:"IBM Plex Sans", sans-serif;
-    font-size:0.62rem; font-weight:500;
-    letter-spacing:0.02em;
-    color:var(--ink-soft);
-  }
-  nav ul{
-    list-style:none; display:flex; gap:28px; margin:0; padding:0;
-  }
-  nav a{
-    text-decoration:none; font-size:0.94rem; color:var(--ink-soft);
-    border-bottom:1px solid transparent;
-    padding-bottom:2px;
-  }
-  nav a:hover{color:var(--ink); border-bottom-color:var(--line);}
-  .nav-toggle{display:none;}
-
-  @media (max-width:760px){
-    nav ul{
-      display:none;
-      position:absolute; left:0; right:0; top:100%;
-      background:var(--paper-raised);
-      border-bottom:1px solid var(--line);
-      flex-direction:column; gap:0; padding:8px 28px 18px;
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AIS – Account Intelligence Stream</title>
+  <meta name="description" content="AIS v1.0 – Secure invoice exchange between Sellers and Purchasers.">
+  <style>
+    :root {
+      --primary: #1a237e;
+      --primary-dark: #0d1440;
+      --accent: #7b1fa2;
+      --accent-light: #9c27b0;
+      --highlight: #ffeb3b;
+      --text: #1a1a2e;
+      --text-light: #555;
+      --bg: #f8f9fc;
+      --white: #ffffff;
+      --card-shadow: 0 8px 30px rgba(26, 35, 126, 0.08);
+      --radius: 12px;
     }
-    nav ul.open{display:flex;}
-    nav li{border-top:1px solid var(--line);}
-    nav a{display:block; padding:12px 0;}
-    .nav-toggle{
-      display:inline-flex; background:none; border:1px solid var(--line);
-      border-radius:var(--radius); padding:8px 12px; font-size:0.9rem;
-      font-family:inherit; color:var(--ink); cursor:pointer;
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.6;
     }
-  }
 
-  /* ---------- Hero ---------- */
-  .hero{padding:76px 0 56px;}
-  .hero h1{
-    font-size:clamp(2.1rem, 4vw, 3.1rem);
-    max-width:15ch;
-    letter-spacing:-0.01em;
-  }
-  .hero p.lede{
-    margin-top:22px;
-    font-size:1.14rem;
-    color:var(--ink-soft);
-    max-width:52ch;
-  }
-  .hero-actions{display:flex; gap:14px; margin-top:32px; flex-wrap:wrap;}
-  .btn{
-    display:inline-block;
-    padding:12px 22px;
-    border-radius:var(--radius);
-    text-decoration:none;
-    font-size:0.95rem;
-    font-weight:500;
-    border:1px solid var(--ink);
-  }
-  .btn-primary{background:var(--ink); color:var(--paper);}
-  .btn-primary:hover{background:#3a3427;}
-  .btn-ghost{background:transparent; color:var(--ink); border-color:var(--line);}
-  .btn-ghost:hover{border-color:var(--ink);}
+    /* ========== HEADER ========== */
+    header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 1000;
+      background: rgba(13, 20, 64, 0.96);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
 
-  /* ---------- Flow diagram ---------- */
-  .flow{
-    margin-top:64px;
-    display:flex; align-items:stretch; gap:0;
-    border:1px solid var(--line);
-    background:var(--paper-raised);
-    border-radius:var(--radius);
-    overflow:hidden;
-  }
-  .flow-node{
-    flex:1;
-    padding:26px 22px;
-    display:flex; flex-direction:column; gap:6px;
-  }
-  .flow-node.seller{background:var(--seller-soft); border-right:1px solid var(--line);}
-  .flow-node.purchaser{background:var(--purchaser-soft); border-left:1px solid var(--line);}
-  .flow-tag{
-    font-family:"IBM Plex Mono", monospace;
-    font-size:0.72rem;
-    letter-spacing:0.03em;
-    color:var(--ink-soft);
-  }
-  .flow-name{font-family:"Fraunces", serif; font-size:1.15rem;}
-  .flow-node.seller .flow-tag, .flow-node.seller .flow-name{color:var(--seller);}
-  .flow-node.purchaser .flow-tag, .flow-node.purchaser .flow-name{color:var(--purchaser);}
-  .flow-center{
-    flex:0 0 auto;
-    width:120px;
-    display:flex; align-items:center; justify-content:center;
-    position:relative;
-    padding:0 6px;
-  }
-  .flow-center svg{width:100%; height:36px;}
-  .flow-center .flow-name{
-    position:absolute; bottom:10px; font-size:0.78rem; text-align:center;
-    color:var(--ink-soft);
-  }
-  @media (max-width:680px){
-    .flow{flex-direction:column;}
-    .flow-node.seller{border-right:none; border-bottom:1px solid var(--line);}
-    .flow-node.purchaser{border-left:none; border-top:1px solid var(--line);}
-    .flow-center{width:auto; padding:18px 0;}
-    .flow-center svg{width:36px; height:100%; transform:rotate(90deg);}
-    .flow-center .flow-name{position:static; margin-top:6px;}
-  }
+    .nav-container {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 0 20px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
 
-  /* ---------- Sections ---------- */
-  section{padding:64px 0;}
-  section + section{border-top:1px solid var(--line);}
-  .eyebrow{
-    font-family:"IBM Plex Mono", monospace;
-    font-size:0.78rem;
-    color:var(--ink-soft);
-    margin-bottom:10px;
-  }
-  .section-head{margin-bottom:44px;}
-  .section-head h2{font-size:clamp(1.6rem, 3vw, 2.1rem);}
-  .section-head p{margin-top:14px; color:var(--ink-soft); max-width:56ch;}
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      color: var(--white);
+      font-weight: 700;
+      font-size: 1.15rem;
+      letter-spacing: 0.3px;
+      flex-shrink: 0;
+    }
 
-  /* ---------- How it works ---------- */
-  .steps{border-top:1px solid var(--line);}
-  .step{
-    display:grid;
-    grid-template-columns:64px 1fr;
-    gap:20px;
-    padding:22px 0;
-    border-bottom:1px solid var(--line);
-    align-items:baseline;
-  }
-  .step-num{
-    font-family:"Fraunces", serif;
-    font-size:1.6rem;
-    color:var(--ink-soft);
-  }
-  .step h3{font-size:1.08rem; font-weight:600; font-family:"IBM Plex Sans", sans-serif; margin-bottom:6px;}
-  .step p{margin:0; color:var(--ink-soft); max-width:58ch;}
+    .logo-mark {
+      width: 34px;
+      height: 34px;
+      background: linear-gradient(135deg, var(--accent), var(--primary));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--highlight);
+      flex-shrink: 0;
+    }
 
-  /* ---------- Menu / features ---------- */
-  .menu-list{border-top:1px solid var(--line);}
-  .menu-row{
-    display:grid;
-    grid-template-columns:48px 1fr;
-    gap:20px;
-    padding:20px 0;
-    border-bottom:1px solid var(--line);
-  }
-  .menu-row .menu-num{
-    font-family:"IBM Plex Mono", monospace;
-    color:var(--ink-soft);
-    padding-top:2px;
-  }
-  .menu-row h3{font-size:1.02rem; font-weight:600; font-family:"IBM Plex Sans", sans-serif; margin-bottom:4px;}
-  .menu-row p{margin:0; color:var(--ink-soft); max-width:58ch;}
+    .logo-text {
+      white-space: nowrap;
+    }
 
-  .also-inside{
-    margin-top:28px;
-    padding-top:24px;
-    border-top:1px dashed var(--line);
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:24px;
-  }
-  @media (max-width:680px){.also-inside{grid-template-columns:1fr;}}
-  .also-inside h4{
-    font-family:"IBM Plex Sans", sans-serif;
-    font-size:0.95rem; font-weight:600; margin:0 0 6px;
-  }
-  .also-inside p{margin:0; color:var(--ink-soft); font-size:0.95rem;}
+    .logo-version {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--highlight);
+      background: rgba(255, 235, 59, 0.15);
+      border: 1px solid rgba(255, 235, 59, 0.35);
+      padding: 2px 8px;
+      border-radius: 50px;
+      letter-spacing: 0.3px;
+      margin-left: 2px;
+      flex-shrink: 0;
+    }
 
-  /* ---------- Files table ---------- */
-  table.files{
-    width:100%;
-    border-collapse:collapse;
-    margin-top:8px;
-  }
-  table.files th{
-    text-align:left;
-    font-family:"IBM Plex Sans", sans-serif;
-    font-size:0.78rem;
-    letter-spacing:0.02em;
-    color:var(--ink-soft);
-    font-weight:500;
-    padding:0 0 10px;
-    border-bottom:1px solid var(--line);
-  }
-  table.files td{
-    padding:16px 18px 16px 0;
-    border-bottom:1px solid var(--line);
-    vertical-align:top;
-  }
-  table.files td.fname{white-space:nowrap;}
-  .quota-note{
-    margin-top:28px;
-    padding:20px 22px;
-    background:var(--paper-raised);
-    border:1px solid var(--line);
-    border-radius:var(--radius);
-  }
-  .quota-note p{margin:0; color:var(--ink-soft);}
-  .quota-terms{
-    display:flex; gap:28px; margin-top:14px; flex-wrap:wrap;
-  }
-  .quota-terms span{font-family:"IBM Plex Mono", monospace; font-size:0.82rem; color:var(--ink);}
+    nav {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
 
-  /* ---------- About ---------- */
-  .about-grid{
-    display:grid;
-    grid-template-columns:1.1fr 0.9fr;
-    gap:52px;
-  }
-  @media (max-width:760px){.about-grid{grid-template-columns:1fr;}}
-  .about-grid p{color:var(--ink-soft); margin-top:16px;}
-  .about-grid p:first-of-type{margin-top:0;}
-  .principles{list-style:none; margin:0; padding:0;}
-  .principles li{
-    padding:16px 0;
-    border-top:1px solid var(--line);
-  }
-  .principles li:last-child{border-bottom:1px solid var(--line);}
-  .principles h4{
-    font-family:"IBM Plex Sans", sans-serif; font-size:0.98rem; font-weight:600; margin:0 0 4px;
-  }
-  .principles p{margin:0; color:var(--ink-soft); font-size:0.94rem;}
+    nav ul {
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
 
-  /* ---------- FAQ ---------- */
-  details{
-    border-bottom:1px solid var(--line);
-    padding:18px 0;
-  }
-  details:first-of-type{border-top:1px solid var(--line);}
-  summary{
-    cursor:pointer;
-    font-family:"IBM Plex Sans", sans-serif;
-    font-weight:600;
-    list-style:none;
-    display:flex; justify-content:space-between; align-items:center;
-    gap:16px;
-  }
-  summary::-webkit-details-marker{display:none;}
-  summary::after{
-    content:"+";
-    font-family:"Fraunces", serif;
-    font-size:1.3rem;
-    color:var(--ink-soft);
-    flex:0 0 auto;
-  }
-  details[open] summary::after{content:"–";}
-  details p{color:var(--ink-soft); margin:12px 0 2px; max-width:58ch;}
+    nav a {
+      color: rgba(255, 255, 255, 0.88);
+      text-decoration: none;
+      padding: 7px 11px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      white-space: nowrap;          /* prevents "About Us" etc. from wrapping */
+      transition: background 0.2s, color 0.2s;
+    }
 
-  /* ---------- Contact ---------- */
-  .contact-grid{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:52px;
-  }
-  @media (max-width:760px){.contact-grid{grid-template-columns:1fr;}}
-  .contact-info h3{font-size:1.1rem; margin-bottom:12px;}
-  .contact-info p{color:var(--ink-soft); margin:0 0 24px;}
-  .contact-line{
-    display:flex; justify-content:space-between;
-    padding:12px 0;
-    border-top:1px solid var(--line);
-    font-size:0.95rem;
-  }
-  .contact-line:last-child{border-bottom:1px solid var(--line);}
-  .contact-line span:first-child{color:var(--ink-soft);}
+    nav a:hover,
+    nav a.active {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--highlight);
+    }
 
-  form{display:flex; flex-direction:column; gap:16px;}
-  label{font-size:0.86rem; color:var(--ink-soft); display:block; margin-bottom:6px;}
-  input, textarea{
-    width:100%;
-    font-family:inherit;
-    font-size:0.98rem;
-    padding:11px 13px;
-    border:1px solid var(--line);
-    border-radius:var(--radius);
-    background:var(--paper-raised);
-    color:var(--ink);
-  }
-  textarea{resize:vertical; min-height:110px;}
-  input:focus, textarea:focus{border-color:var(--ink);}
-  .form-submit{align-self:flex-start; margin-top:4px;}
+    .nav-download {
+      background: var(--highlight) !important;
+      color: var(--primary-dark) !important;
+      font-weight: 700 !important;
+      margin-left: 6px;
+    }
 
-  /* ---------- Footer ---------- */
-  footer{
-    border-top:1px solid var(--line);
-    padding:36px 0;
-  }
-  .footer-row{
-    display:flex; justify-content:space-between; align-items:center;
-    gap:16px; flex-wrap:wrap;
-    font-size:0.86rem; color:var(--ink-soft);
-  }
-  .footer-links{display:flex; gap:20px; list-style:none; margin:0; padding:0;}
-  .footer-links a{text-decoration:none; color:var(--ink-soft);}
-  .footer-links a:hover{color:var(--ink);}
-</style>
+    .nav-download:hover {
+      background: #fff59d !important;
+      color: var(--primary-dark) !important;
+    }
+
+    /* Language switcher */
+    .lang-switch {
+      display: flex;
+      align-items: center;
+      margin-left: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 6px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.08);
+      flex-shrink: 0;
+    }
+
+    .lang-btn {
+      background: transparent;
+      border: none;
+      color: rgba(255, 255, 255, 0.7);
+      padding: 5px 11px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      letter-spacing: 0.4px;
+      white-space: nowrap;
+    }
+
+    .lang-btn.active {
+      background: var(--highlight);
+      color: var(--primary-dark);
+    }
+
+    .lang-btn:hover:not(.active) {
+      background: rgba(255, 255, 255, 0.12);
+      color: white;
+    }
+
+    .menu-toggle {
+      display: none;
+      background: none;
+      border: none;
+      color: white;
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 4px 8px;
+    }
+
+    /* ========== HERO & REST (same as before) ========== */
+    .hero {
+      background: linear-gradient(160deg, var(--primary-dark) 0%, var(--primary) 45%, var(--accent) 100%);
+      color: var(--white);
+      padding: 130px 24px 90px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 70% 30%, rgba(255, 235, 59, 0.12) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    .hero-content { max-width: 900px; margin: 0 auto; position: relative; }
+    .hero-diagram {
+      display: block;
+      width: 100%;
+      max-width: 720px;
+      height: auto;
+      margin: 0 auto 28px;
+      border-radius: 16px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+      background: #fff;
+    }
+    .hero h1 {
+      font-size: clamp(2.1rem, 5vw, 3.3rem);
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 18px;
+    }
+    .hero h1 span { color: var(--highlight); }
+    .hero p {
+      font-size: 1.15rem;
+      opacity: 0.92;
+      max-width: 560px;
+      margin: 0 auto 36px;
+    }
+    .hero-buttons {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 26px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 1rem;
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+      cursor: pointer;
+      border: none;
+    }
+    .btn-download {
+      background: var(--highlight);
+      color: var(--primary-dark);
+      font-weight: 700;
+    }
+    .btn-download:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(255, 235, 59, 0.4);
+    }
+    .btn-download svg { width: 18px; height: 18px; fill: currentColor; }
+    .btn-outline {
+      background: transparent;
+      color: var(--white);
+      border: 2px solid rgba(255, 255, 255, 0.5);
+    }
+    .btn-outline:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--white);
+    }
+
+    section { padding: 80px 24px; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    .section-header { text-align: center; margin-bottom: 48px; }
+    .section-header h2 { font-size: 2rem; color: var(--primary); margin-bottom: 12px; }
+    .section-header p { color: var(--text-light); font-size: 1.1rem; max-width: 560px; margin: 0 auto; }
+
+    .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+    .about-text h3 { font-size: 1.5rem; color: var(--primary); margin-bottom: 16px; }
+    .about-text p { color: var(--text-light); margin-bottom: 16px; }
+    .about-text ul { list-style: none; margin-top: 20px; }
+    .about-text li { padding: 8px 0 8px 28px; position: relative; color: var(--text); }
+    .about-text li::before { content: "✓"; position: absolute; left: 0; color: var(--accent); font-weight: 700; }
+    .about-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 36px;
+      box-shadow: var(--card-shadow);
+      border: 1px solid rgba(26, 35, 126, 0.06);
+    }
+    .about-card .stat { text-align: center; padding: 20px 0; }
+    .about-card .stat + .stat { border-top: 1px solid #eee; }
+    .about-card .stat-number { font-size: 2.4rem; font-weight: 800; color: var(--primary); line-height: 1; }
+    .about-card .stat-label { font-size: 0.95rem; color: var(--text-light); margin-top: 6px; }
+
+    .features { background: var(--white); }
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
+    .feature-card {
+      background: var(--bg);
+      border-radius: var(--radius);
+      padding: 28px 24px;
+      border: 1px solid transparent;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+    }
+    .feature-card:hover {
+      border-color: rgba(123, 31, 162, 0.25);
+      box-shadow: var(--card-shadow);
+      transform: translateY(-4px);
+    }
+    .feature-icon {
+      width: 48px; height: 48px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem; margin-bottom: 16px; color: white;
+    }
+    .feature-card h3 { font-size: 1.15rem; color: var(--primary); margin-bottom: 8px; }
+    .feature-card p { color: var(--text-light); font-size: 0.95rem; }
+
+    .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 32px; }
+    .step { text-align: center; }
+    .step-number {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: white; font-weight: 800; font-size: 1.3rem;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 18px;
+    }
+    .step h3 { font-size: 1.1rem; color: var(--primary); margin-bottom: 8px; }
+    .step p { color: var(--text-light); font-size: 0.95rem; }
+
+    .cta-banner {
+      background: linear-gradient(135deg, var(--primary-dark), var(--accent));
+      color: white;
+      text-align: center;
+      padding: 64px 24px;
+      border-radius: var(--radius);
+      margin: 0 24px;
+    }
+    .cta-banner h2 { font-size: 1.8rem; margin-bottom: 12px; }
+    .cta-banner p { opacity: 0.9; margin-bottom: 28px; max-width: 480px; margin-left: auto; margin-right: auto; }
+
+    .contact-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 40px; }
+    .contact-info h3 { font-size: 1.3rem; color: var(--primary); margin-bottom: 16px; }
+    .contact-info p { color: var(--text-light); margin-bottom: 24px; }
+    .contact-item { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 18px; }
+    .contact-item .icon {
+      width: 40px; height: 40px;
+      border-radius: 8px;
+      background: rgba(123, 31, 162, 0.1);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--accent); flex-shrink: 0; font-size: 1.1rem;
+    }
+    .contact-item strong { display: block; color: var(--text); font-size: 0.95rem; }
+    .contact-item span { color: var(--text-light); font-size: 0.9rem; }
+    .contact-form {
+      background: var(--white);
+      padding: 32px;
+      border-radius: var(--radius);
+      box-shadow: var(--card-shadow);
+    }
+    .form-group { margin-bottom: 18px; }
+    .form-group label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 6px; color: var(--text); }
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid #d0d5e0;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-family: inherit;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-group input:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(123, 31, 162, 0.15);
+    }
+    .form-group textarea { min-height: 120px; resize: vertical; }
+    .form-submit {
+      width: 100%;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: white;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    .form-submit:hover { opacity: 0.92; transform: translateY(-1px); }
+
+    footer {
+      background: var(--primary-dark);
+      color: rgba(255, 255, 255, 0.75);
+      padding: 48px 24px 28px;
+    }
+    .footer-grid {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 40px;
+      margin-bottom: 36px;
+    }
+    .footer-brand .logo { margin-bottom: 14px; }
+    .footer-brand p { font-size: 0.9rem; line-height: 1.6; max-width: 280px; }
+    .footer-col h4 { color: white; font-size: 0.95rem; margin-bottom: 14px; letter-spacing: 0.3px; }
+    .footer-col ul { list-style: none; }
+    .footer-col a {
+      color: rgba(255, 255, 255, 0.7);
+      text-decoration: none;
+      font-size: 0.9rem;
+      display: block;
+      padding: 5px 0;
+      transition: color 0.2s;
+    }
+    .footer-col a:hover { color: var(--highlight); }
+    .footer-bottom {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding-top: 24px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 0.85rem;
+    }
+
+    /* ========== RESPONSIVE ========== */
+    @media (max-width: 1100px) {
+      .logo-text { display: none; }          /* hide long name → only AIS mark + version */
+      nav a { padding: 7px 9px; font-size: 0.88rem; }
+    }
+
+    @media (max-width: 900px) {
+      .about-grid, .contact-grid { grid-template-columns: 1fr; }
+      .footer-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 780px) {
+      nav ul {
+        display: none;
+        position: absolute;
+        top: 64px;
+        left: 0; right: 0;
+        background: var(--primary-dark);
+        flex-direction: column;
+        padding: 12px 16px 16px;
+        gap: 2px;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+      }
+      nav ul.open { display: flex; }
+      .menu-toggle { display: block; }
+      .lang-switch { margin-left: 0; }
+      .hero { padding: 110px 20px 70px; }
+      .footer-grid { grid-template-columns: 1fr; }
+      .cta-banner { margin: 0; border-radius: 0; }
+    }
+  </style>
 </head>
 <body>
 
-<header>
-  <div class="wrap nav-row">
-    <a class="brand" href="#top">AIS <small>Account Intelligence Stream</small></a>
-    <button class="nav-toggle" aria-expanded="false" aria-controls="primary-nav" onclick="const n=document.getElementById('primary-nav'); const open=n.classList.toggle('open'); this.setAttribute('aria-expanded', open);">Menu</button>
-    <nav>
-      <ul id="primary-nav">
-        <li><a href="#how">How it works</a></li>
-        <li><a href="#inside">Inside AIS</a></li>
-        <li><a href="#files">Files &amp; IDs</a></li>
-        <li><a href="#about">About</a></li>
-        <li><a href="#contact">Contact</a></li>
-      </ul>
-    </nav>
-  </div>
-</header>
+  <header>
+    <div class="nav-container">
+      <a href="#home" class="logo">
+        <span class="logo-mark">AIS</span>
+        <span class="logo-text" data-i18n="logo">Account Intelligence Stream</span>
+        <span class="logo-version">v1.0</span>
+      </a>
 
-<main id="top">
+      <button class="menu-toggle" aria-label="Toggle menu" onclick="document.querySelector('nav ul').classList.toggle('open')">☰</button>
 
-  <!-- HERO -->
-  <section class="hero">
-    <div class="wrap">
-      <h1>Invoices that move on their own, Seller to Purchaser.</h1>
-      <p class="lede">AIS carries invoices back and forth between the businesses you work with. No emailing PDFs, no logging into a portal, no retyping numbers by hand — you click one option, and it's on its way.</p>
-      <div class="hero-actions">
-        <a class="btn btn-primary" href="#how">See how it works</a>
-        <a class="btn btn-ghost" href="#inside">Look inside the Main Menu</a>
+      <nav>
+        <ul>
+          <li><a href="#home" data-i18n="nav_home">Home</a></li>
+          <li><a href="#about" data-i18n="nav_about">About Us</a></li>
+          <li><a href="#features" data-i18n="nav_features">Features</a></li>
+          <li><a href="#how-it-works" data-i18n="nav_how">How It Works</a></li>
+          <li><a href="#contact" data-i18n="nav_contact">Contact Us</a></li>
+          <li><a href="#download" class="nav-download" data-i18n="nav_download">Download AIS</a></li>
+          <li>
+            <div class="lang-switch">
+              <button class="lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
+              <button class="lang-btn" data-lang="bg" onclick="setLanguage('bg')">BG</button>
+            </div>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ========== HERO ========== -->
+  <section class="hero" id="home">
+    <div class="hero-content">
+      <img src="manual.jpg" alt="Invoice transfer – intelligent automated process" class="hero-diagram" data-i18n-alt="hero_img_alt">
+      <h1 data-i18n="hero_title">Secure Invoice Exchange<br>for <span>Sellers & Purchasers</span></h1>
+      <p data-i18n="hero_desc">Account Intelligence Stream lets businesses send and receive invoices reliably — with automatic delivery, messaging, and space controls built in.</p>
+      <div class="hero-buttons">
+        <a href="#download" class="btn btn-download">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+          <span data-i18n="btn_download">Download AIS</span>
+        </a>
+        <a href="#features" class="btn btn-outline" data-i18n="btn_explore">Explore Features</a>
       </div>
+    </div>
+  </section>
 
-      <div class="flow" role="img" aria-label="Diagram: a Seller sends an invoice through AIS to a Purchaser">
-        <div class="flow-node seller">
-          <span class="flow-tag">SENDS</span>
-          <span class="flow-name">Seller</span>
+  <!-- ========== ABOUT ========== -->
+  <section id="about">
+    <div class="container">
+      <div class="section-header">
+        <h2 data-i18n="about_title">About AIS</h2>
+        <p data-i18n="about_subtitle">A focused tool designed for clear, controlled invoice exchange between trading partners.</p>
+      </div>
+      <div class="about-grid">
+        <div class="about-text">
+          <h3 data-i18n="about_h3">Built for everyday business use</h3>
+          <p data-i18n="about_p1">AIS (Account Intelligence Stream) is a desktop application that helps Sellers deliver invoices to Purchasers and lets Purchasers collect them — without relying on email chains or shared drives.</p>
+          <p data-i18n="about_p2">Both sides maintain their own lists of trading partners. Invoices move through a secure channel with clear naming rules, size limits, and per-Seller space quotas.</p>
+          <ul>
+            <li data-i18n="about_li1">Separate Seller and Purchaser lists</li>
+            <li data-i18n="about_li2">One-click send and receive</li>
+            <li data-i18n="about_li3">Scheduled automatic receiving</li>
+            <li data-i18n="about_li4">Short messages between parties</li>
+            <li data-i18n="about_li5">Load-limit visibility and enforcement</li>
+          </ul>
         </div>
-        <div class="flow-center">
-          <svg viewBox="0 0 120 36" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-            <line x1="6" y1="18" x2="114" y2="18" stroke="#5B564A" stroke-width="1.5"/>
-            <polygon points="114,12 122,18 114,24" fill="#5B564A"/>
-          </svg>
-          <span class="flow-name">AIS</span>
-        </div>
-        <div class="flow-node purchaser">
-          <span class="flow-tag">RECEIVES</span>
-          <span class="flow-name">Purchaser</span>
+        <div class="about-card">
+          <div class="stat">
+            <div class="stat-number">v1.0</div>
+            <div class="stat-label" data-i18n="stat1">Current release</div>
+          </div>
+          <div class="stat">
+            <div class="stat-number">2</div>
+            <div class="stat-label" data-i18n="stat2">Roles: Seller & Purchaser</div>
+          </div>
+          <div class="stat">
+            <div class="stat-number">24h</div>
+            <div class="stat-label" data-i18n="stat3">Auto-cleanup of old files</div>
+          </div>
+          <div class="stat">
+            <div class="stat-number">5 MB</div>
+            <div class="stat-label" data-i18n="stat4">Max file size per invoice</div>
+          </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- HOW IT WORKS -->
-  <section id="how">
-    <div class="wrap">
-      <div class="section-head">
-        <p class="eyebrow">How it works</p>
-        <h2>Everything revolves around one pair: a Seller and a Purchaser.</h2>
-        <p>You keep a list of the businesses on the other side of your invoices, and AIS uses that list to know who should receive what — and where to bring in what's been sent to you.</p>
+  <!-- ========== FEATURES ========== -->
+  <section class="features" id="features">
+    <div class="container">
+      <div class="section-header">
+        <h2 data-i18n="features_title">Key Features</h2>
+        <p data-i18n="features_subtitle">Everything you need to manage invoice flow between your trading partners.</p>
       </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">📋</div>
+          <h3 data-i18n="feat1_title">Seller & Purchaser Lists</h3>
+          <p data-i18n="feat1_desc">Maintain clear lists of the businesses you send invoices to and those that send invoices to you. Add, edit, or remove partners at any time.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📤</div>
+          <h3 data-i18n="feat2_title">Send Invoices</h3>
+          <p data-i18n="feat2_desc">Prepare Seller folders and upload new invoices in a single action. Only valid 10-digit PDF invoices and approved text files are accepted.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📥</div>
+          <h3 data-i18n="feat3_title">Receive Invoices</h3>
+          <p data-i18n="feat3_desc">Download new invoices from your Sellers into organised local folders, sorted by Seller and Purchaser pairs.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">⏰</div>
+          <h3 data-i18n="feat4_title">Automatic Receiving</h3>
+          <p data-i18n="feat4_desc">Turn on scheduled downloads so AIS checks for new invoices at set times throughout the day — no manual clicks required.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">💬</div>
+          <h3 data-i18n="feat5_title">Messages</h3>
+          <p data-i18n="feat5_desc">Leave short written notes for a Seller or Purchaser. A red marker on the Message button shows when a note is waiting to be read.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📊</div>
+          <h3 data-i18n="feat6_title">Space & Load Limits</h3>
+          <p data-i18n="feat6_desc">Each Seller has a defined space allocation. Check Load Limit, Consumption, and remaining free space before sending.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📖</div>
+          <h3 data-i18n="feat7_title">Built-in User Manual</h3>
+          <p data-i18n="feat7_desc">Open the full AIS User Manual (F1 help available throughout the application) for step-by-step guidance on every feature.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🔒</div>
+          <h3 data-i18n="feat8_title">Clean & Secure Channel</h3>
+          <p data-i18n="feat8_desc">Non-standard or oversized files are filtered out. Stale invoices older than 24 hours are cleaned automatically to keep the channel tidy.</p>
+        </div>
+      </div>
+    </div>
+  </section>
 
+  <!-- ========== HOW IT WORKS ========== -->
+  <section id="how-it-works">
+    <div class="container">
+      <div class="section-header">
+        <h2 data-i18n="how_title">How It Works</h2>
+        <p data-i18n="how_subtitle">A straightforward workflow for both sides of the invoice exchange.</p>
+      </div>
       <div class="steps">
         <div class="step">
-          <span class="step-num">1</span>
-          <div>
-            <h3>Prepare</h3>
-            <p>You save an invoice for a Purchaser the way you always have. Nothing changes about how the invoice itself gets made.</p>
-          </div>
+          <div class="step-number">1</div>
+          <h3 data-i18n="step1_title">Set up your lists</h3>
+          <p data-i18n="step1_desc">Add your Sellers (businesses you invoice) and Purchasers (businesses that invoice you) in the dedicated list editors.</p>
         </div>
         <div class="step">
-          <span class="step-num">2</span>
-          <div>
-            <h3>Upload</h3>
-            <p>Choose <strong>Upload Invoices</strong> from the Main Menu. AIS gets everything ready and sends each invoice to the right Purchaser.</p>
-          </div>
+          <div class="step-number">2</div>
+          <h3 data-i18n="step2_title">Place invoices</h3>
+          <p data-i18n="step2_desc">Put ready-to-send invoices into the correct local Seller/Purchaser folders using the required naming convention.</p>
         </div>
         <div class="step">
-          <span class="step-num">3</span>
-          <div>
-            <h3>Deliver</h3>
-            <p>AIS places the invoice where that Purchaser will look for it, sorted by who it came from — no shared inbox, no sorting by hand.</p>
-          </div>
+          <div class="step-number">3</div>
+          <h3 data-i18n="step3_title">Send or Receive</h3>
+          <p data-i18n="step3_desc">Use “Send Invoices” to upload or “Receive Invoices” to download. Optional automatic receiving runs on a schedule.</p>
         </div>
         <div class="step">
-          <span class="step-num">4</span>
-          <div>
-            <h3>Receive</h3>
-            <p>The Purchaser brings it in with <strong>Download Invoices</strong> — by hand, or automatically at set times of day — and it's on their computer, ready to file.</p>
-          </div>
+          <div class="step-number">4</div>
+          <h3 data-i18n="step4_title">Stay informed</h3>
+          <p data-i18n="step4_desc">Check space usage, exchange short messages, and move completed invoices into your own archive.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- INSIDE AIS -->
-  <section id="inside">
-    <div class="wrap">
-      <div class="section-head">
-        <p class="eyebrow">Inside AIS</p>
-        <h2>The Main Menu, and what each option does.</h2>
-        <p>The Main Menu is the small window that opens when you start AIS. It stays out of the way in the corner of your screen — every option is one double-click away. Point at any option and press <span class="mono">F1</span> for a reminder of what it does.</p>
+  <!-- ========== DOWNLOAD ========== -->
+  <section id="download" style="background: var(--bg);">
+    <div class="container">
+      <div class="section-header">
+        <h2 data-i18n="download_title">Download AIS</h2>
+        <p data-i18n="download_subtitle">Get the latest version of Account Intelligence Stream for Windows.</p>
       </div>
-
-      <div class="menu-list">
-        <div class="menu-row">
-          <span class="menu-num">1</span>
-          <div><h3>List Seller</h3><p>Keep the businesses you send invoices to — names, phone, email, and status at a glance.</p></div>
-        </div>
-        <div class="menu-row">
-          <span class="menu-num">2</span>
-          <div><h3>List Purchaser</h3><p>The same list, the other direction: the businesses that send invoices to you.</p></div>
-        </div>
-        <div class="menu-row">
-          <span class="menu-num">3</span>
-          <div><h3>Upload Invoices</h3><p>Sends out anything you've prepared for the Purchasers on your Seller list, and tells you when it's done.</p></div>
-        </div>
-        <div class="menu-row">
-          <span class="menu-num">4</span>
-          <div><h3>Download Invoices</h3><p>Brings in anything your Sellers have sent you, sorted by who it belongs to.</p></div>
-        </div>
-        <div class="menu-row">
-          <span class="menu-num">5</span>
-          <div><h3>Automatic Download Invoices</h3><p>Turns hands-off receiving on or off — AIS checks for new invoices at set times, without a click from you.</p></div>
-        </div>
-      </div>
-
-      <div class="also-inside">
-        <div>
-          <h4>Messages</h4>
-          <p>Leave a short note for any Seller or Purchaser straight from their list. A small red marker lets you know when one is waiting to be read.</p>
-        </div>
-        <div>
-          <h4>Checking your space</h4>
-          <p><strong>Check Loaded</strong> shows the Load Limit, Consumption, and room still free for any Seller — so a full mailbox never comes as a surprise.</p>
+      <div style="max-width: 520px; margin: 0 auto; text-align: center;">
+        <div class="about-card" style="padding: 40px 32px;">
+          <div style="font-size: 3rem; margin-bottom: 12px;">⬇</div>
+          <h3 style="color: var(--primary); margin-bottom: 8px;">AIS v1.0</h3>
+          <p style="color: var(--text-light); margin-bottom: 24px; font-size: 0.95rem;" data-i18n="download_desc">
+            Windows desktop application<br>Includes User Manual &amp; setup files
+          </p>
+          <a href="AIS.zip" class="btn btn-download" style="width: 100%; justify-content: center; padding: 16px 28px; font-size: 1.1rem;" download>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+            <span data-i18n="btn_download">Download AIS</span>
+          </a>
+          <p style="margin-top: 18px; font-size: 0.85rem; color: var(--text-light);" data-i18n="download_note">
+            Free for registered users · Windows 10 / 11
+          </p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- FILES & IDS -->
-  <section id="files">
-    <div class="wrap">
-      <div class="section-head">
-        <p class="eyebrow">Files &amp; IDs</p>
-        <h2>Four kinds of files. Nothing else gets through.</h2>
-        <p>You don't need to remember any of this to use AIS — but if you ever see one of these names on disk, here's what it is. Anything that doesn't match is treated as clutter and removed, on your computer and wherever else it was found.</p>
-      </div>
-
-      <table class="files">
-        <thead>
-          <tr><th>What it looks like</th><th>What it is</th></tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td class="fname"><span class="mono">1234567890.pdf</span><br><span class="mono" style="color:var(--ink-soft); font-size:0.8em;">10 digits + .pdf</span></td>
-            <td>An invoice.</td>
-          </tr>
-          <tr>
-            <td class="fname"><span class="mono">1234567890.txt</span><br><span class="mono" style="color:var(--ink-soft); font-size:0.8em;">10 digits + .txt</span></td>
-            <td>The item details for that same invoice, when there are any.</td>
-          </tr>
-          <tr>
-            <td class="fname"><span class="mono">12345678.txt</span><br><span class="mono" style="color:var(--ink-soft); font-size:0.8em;">8 digits + .txt</span></td>
-            <td>A list of invoices.</td>
-          </tr>
-          <tr>
-            <td class="fname"><span class="mono">message.txt</span></td>
-            <td>A message between a Seller and a Purchaser.</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div class="quota-note">
-        <p>Every Seller is given a set amount of space to send invoices in. <strong>Check Loaded</strong> breaks it down into three numbers:</p>
-        <div class="quota-terms">
-          <span>LOAD LIMIT — total space given</span>
-          <span>CONSUMPTION — space already used</span>
-          <span>NOT LOADED — room still free</span>
-        </div>
-      </div>
+  <!-- ========== CTA ========== -->
+  <div class="container" style="padding: 0 0 80px;">
+    <div class="cta-banner">
+      <h2 data-i18n="cta_title">Ready to streamline invoice exchange?</h2>
+      <p data-i18n="cta_desc">AIS keeps the process simple for both Sellers and Purchasers — with clear controls and minimal overhead.</p>
+      <a href="#download" class="btn btn-download" style="margin-right: 12px;">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+        <span data-i18n="btn_download">Download AIS</span>
+      </a>
+      <a href="#contact" class="btn btn-outline" data-i18n="btn_contact">Contact Us</a>
     </div>
-  </section>
-
-  <!-- ABOUT -->
-  <section id="about">
-    <div class="wrap about-grid">
-      <div>
-        <p class="eyebrow">About</p>
-        <h2>Built for the part of the job nobody enjoys.</h2>
-        <p>Sending and chasing invoices eats up time that has nothing to do with actually running a business. AIS exists to take that one job off your desk: it carries invoices between the people who send them and the people who need them, on a schedule, without anyone opening an email client.</p>
-        <p>It's built to sit quietly in the corner of a screen. There's no dashboard to learn, no login to remember — just a short list of who you do business with, and a handful of options that do exactly what they say.</p>
-      </div>
-      <ul class="principles">
-        <li>
-          <h4>Plain by design</h4>
-          <p>Every option in the Main Menu does one thing, named for what it does — not how it's built.</p>
-        </li>
-        <li>
-          <h4>Nothing to lose track of</h4>
-          <p>Only four kinds of files ever move through AIS. Anything else is treated as clutter.</p>
-        </li>
-        <li>
-          <h4>Help where you're standing</h4>
-          <p>Point at anything and press F1 — a short note explains it on the spot.</p>
-        </li>
-      </ul>
-    </div>
-  </section>
-
-  <!-- FAQ -->
-  <section id="faq">
-    <div class="wrap">
-      <div class="section-head">
-        <p class="eyebrow">Questions</p>
-        <h2>Before you get started</h2>
-      </div>
-
-      <details open>
-        <summary>Do I need to be a Seller or a Purchaser to use AIS?</summary>
-        <p>Either, or both. If you send invoices, you'll keep a Seller list. If you receive them, you'll keep a Purchaser list. Many businesses do both at once.</p>
-      </details>
-      <details>
-        <summary>What happens if a Seller's space runs out?</summary>
-        <p>AIS tells you exactly which invoices couldn't be sent and by how much the space was exceeded, so you can free up room or ask for more.</p>
-      </details>
-      <details>
-        <summary>Can invoices get lost or misfiled?</summary>
-        <p>AIS only recognizes four file patterns and sorts everything by the Seller and Purchaser it belongs to. Anything that doesn't match those patterns is removed rather than left to cause confusion later.</p>
-      </details>
-      <details>
-        <summary>Do I have to check for new invoices myself?</summary>
-        <p>No — turn on Automatic Download Invoices and AIS checks for you at set times each day. You can switch it off again just as easily.</p>
-      </details>
-      <details>
-        <summary>Where do received invoices end up?</summary>
-        <p>On your own computer, sorted by who sent them. AIS doesn't delete anything you've received — it just reminds you to move them into your own archive from time to time.</p>
-      </details>
-    </div>
-  </section>
-
-  <!-- CONTACT -->
-  <section id="contact">
-    <div class="wrap contact-grid">
-      <div class="contact-info">
-        <p class="eyebrow">Contact</p>
-        <h3>Talk to us before you start.</h3>
-        <p>If you're setting up your first Seller or Purchaser list, or need space added to an existing one, reach out and we'll walk through it with you.</p>
-        <div class="contact-line"><span>Support</span><span>support@ais-invoices.example</span></div>
-        <div class="contact-line"><span>Sales</span><span>hello@ais-invoices.example</span></div>
-        <div class="contact-line"><span>Hours</span><span>Mon–Fri, 9:00–17:00</span></div>
-        <div class="contact-line"><span>Already a user?</span><span>Message us from inside AIS</span></div>
-      </div>
-      <form action="mailto:hello@ais-invoices.example" method="post" enctype="text/plain">
-        <div>
-          <label for="name">Name</label>
-          <input type="text" id="name" name="name" required>
-        </div>
-        <div>
-          <label for="email">Email</label>
-          <input type="email" id="email" name="email" required>
-        </div>
-        <div>
-          <label for="message">Message</label>
-          <textarea id="message" name="message" required></textarea>
-        </div>
-        <button class="btn btn-primary form-submit" type="submit">Send message</button>
-      </form>
-    </div>
-  </section>
-
-</main>
-
-<footer>
-  <div class="wrap footer-row">
-    <span>AIS — Account Intelligence Stream</span>
-    <ul class="footer-links">
-      <li><a href="#how">How it works</a></li>
-      <li><a href="#inside">Inside AIS</a></li>
-      <li><a href="#files">Files &amp; IDs</a></li>
-      <li><a href="#contact">Contact</a></li>
-    </ul>
   </div>
-</footer>
 
+  <!-- ========== CONTACT ========== -->
+  <section id="contact" style="background: var(--white);">
+    <div class="container">
+      <div class="section-header">
+        <h2 data-i18n="contact_title">Contact Us</h2>
+        <p data-i18n="contact_subtitle">Questions about AIS, licensing, or support? We’d be glad to hear from you.</p>
+      </div>
+      <div class="contact-grid">
+        <div class="contact-info">
+          <h3 data-i18n="contact_get">Get in touch</h3>
+          <p data-i18n="contact_intro">Whether you need more information about deploying AIS in your organisation or have a technical question, our team is here to help.</p>
+          <div class="contact-item">
+            <div class="icon">✉</div>
+            <div>
+              <strong data-i18n="contact_email">Email</strong>
+              <span>si.mirchev@gmail.com</span>
+            </div>
+          </div>
+          <div class="contact-item">
+            <div class="icon">📞</div>
+            <div>
+              <strong data-i18n="contact_phone">Phone</strong>
+              <span>+359 88 999 8611</span>
+            </div>
+          </div>
+          <div class="contact-item">
+            <div class="icon">📍</div>
+            <div>
+              <strong data-i18n="contact_office">Office</strong>
+              <span data-i18n="contact_office_hours">Business Services Division<br>Available Mon–Fri, 09:00–17:00</span>
+            </div>
+          </div>
+        </div>
+        <form class="contact-form" action="https://formspree.io/f/xnpnnajb" method="POST">
+          <div class="form-group">
+            <label for="name" data-i18n="form_name">Full name</label>
+            <input type="text" id="name" name="name" required data-i18n-placeholder="form_name_ph">
+          </div>
+          <div class="form-group">
+            <label for="email" data-i18n="form_email">Email address</label>
+            <input type="email" id="email" name="email" required data-i18n-placeholder="form_email_ph">
+          </div>
+          <div class="form-group">
+            <label for="subject" data-i18n="form_subject">Subject</label>
+            <input type="text" id="subject" name="subject" data-i18n-placeholder="form_subject_ph">
+          </div>
+          <div class="form-group">
+            <label for="message" data-i18n="form_message">Message</label>
+            <textarea id="message" name="message" required data-i18n-placeholder="form_message_ph"></textarea>
+          </div>
+          <button type="submit" class="form-submit" data-i18n="form_submit">Send Message</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FOOTER ========== -->
+  <footer>
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="#home" class="logo">
+          <span class="logo-mark">AIS</span>
+          <span class="logo-text" data-i18n="logo">Account Intelligence Stream</span>
+          <span class="logo-version">v1.0</span>
+        </a>
+        <p data-i18n="footer_tagline">Secure, organised invoice exchange between Sellers and Purchasers.</p>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="footer_product">Product</h4>
+        <ul>
+          <li><a href="#features" data-i18n="nav_features">Features</a></li>
+          <li><a href="#how-it-works" data-i18n="nav_how">How It Works</a></li>
+          <li><a href="#about" data-i18n="nav_about">About AIS</a></li>
+          <li><a href="#download" data-i18n="nav_download">Download AIS</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="footer_support">Support</h4>
+        <ul>
+          <li><a href="#contact" data-i18n="nav_contact">Contact Us</a></li>
+          <li><a href="#contact" data-i18n="footer_demo">Request Demo</a></li>
+          <li><a href="#contact" data-i18n="footer_help">Technical Help</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="footer_company">Company</h4>
+        <ul>
+          <li><a href="#about" data-i18n="nav_about">About Us</a></li>
+          <li><a href="#contact" data-i18n="footer_privacy">Privacy</a></li>
+          <li><a href="#contact" data-i18n="footer_terms">Terms of Use</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span data-i18n="footer_copy">© 2026 Account Intelligence Stream. All rights reserved.</span>
+      <span>AIS v1.0</span>
+    </div>
+  </footer>
+
+  <script>
+    const translations = {
+      en: {
+        logo: "Account Intelligence Stream",
+        nav_home: "Home",
+        nav_about: "About Us",
+        nav_features: "Features",
+        nav_how: "How It Works",
+        nav_contact: "Contact Us",
+        nav_download: "Download AIS",
+        hero_img_alt: "Invoice transfer – intelligent automated process",
+        hero_title: "Secure Invoice Exchange<br>for <span>Sellers & Purchasers</span>",
+        hero_desc: "Account Intelligence Stream lets businesses send and receive invoices reliably — with automatic delivery, messaging, and space controls built in.",
+        btn_download: "Download AIS",
+        btn_explore: "Explore Features",
+        about_title: "About AIS",
+        about_subtitle: "A focused tool designed for clear, controlled invoice exchange between trading partners.",
+        about_h3: "Built for everyday business use",
+        about_p1: "AIS (Account Intelligence Stream) is a desktop application that helps Sellers deliver invoices to Purchasers and lets Purchasers collect them — without relying on email chains or shared drives.",
+        about_p2: "Both sides maintain their own lists of trading partners. Invoices move through a secure channel with clear naming rules, size limits, and per-Seller space quotas.",
+        about_li1: "Separate Seller and Purchaser lists",
+        about_li2: "One-click send and receive",
+        about_li3: "Scheduled automatic receiving",
+        about_li4: "Short messages between parties",
+        about_li5: "Load-limit visibility and enforcement",
+        stat1: "Current release",
+        stat2: "Roles: Seller & Purchaser",
+        stat3: "Auto-cleanup of old files",
+        stat4: "Max file size per invoice",
+        features_title: "Key Features",
+        features_subtitle: "Everything you need to manage invoice flow between your trading partners.",
+        feat1_title: "Seller & Purchaser Lists",
+        feat1_desc: "Maintain clear lists of the businesses you send invoices to and those that send invoices to you. Add, edit, or remove partners at any time.",
+        feat2_title: "Send Invoices",
+        feat2_desc: "Prepare Seller folders and upload new invoices in a single action. Only valid 10-digit PDF invoices and approved text files are accepted.",
+        feat3_title: "Receive Invoices",
+        feat3_desc: "Download new invoices from your Sellers into organised local folders, sorted by Seller and Purchaser pairs.",
+        feat4_title: "Automatic Receiving",
+        feat4_desc: "Turn on scheduled downloads so AIS checks for new invoices at set times throughout the day — no manual clicks required.",
+        feat5_title: "Messages",
+        feat5_desc: "Leave short written notes for a Seller or Purchaser. A red marker on the Message button shows when a note is waiting to be read.",
+        feat6_title: "Space & Load Limits",
+        feat6_desc: "Each Seller has a defined space allocation. Check Load Limit, Consumption, and remaining free space before sending.",
+        feat7_title: "Built-in User Manual",
+        feat7_desc: "Open the full AIS User Manual (F1 help available throughout the application) for step-by-step guidance on every feature.",
+        feat8_title: "Clean & Secure Channel",
+        feat8_desc: "Non-standard or oversized files are filtered out. Stale invoices older than 24 hours are cleaned automatically to keep the channel tidy.",
+        how_title: "How It Works",
+        how_subtitle: "A straightforward workflow for both sides of the invoice exchange.",
+        step1_title: "Set up your lists",
+        step1_desc: "Add your Sellers (businesses you invoice) and Purchasers (businesses that invoice you) in the dedicated list editors.",
+        step2_title: "Place invoices",
+        step2_desc: "Put ready-to-send invoices into the correct local Seller/Purchaser folders using the required naming convention.",
+        step3_title: "Send or Receive",
+        step3_desc: "Use “Send Invoices” to upload or “Receive Invoices” to download. Optional automatic receiving runs on a schedule.",
+        step4_title: "Stay informed",
+        step4_desc: "Check space usage, exchange short messages, and move completed invoices into your own archive.",
+        download_title: "Download AIS",
+        download_subtitle: "Get the latest version of Account Intelligence Stream for Windows.",
+        download_desc: "Windows desktop application<br>Includes User Manual &amp; setup files",
+        download_note: "Free for registered users · Windows 10 / 11",
+        cta_title: "Ready to streamline invoice exchange?",
+        cta_desc: "AIS keeps the process simple for both Sellers and Purchasers — with clear controls and minimal overhead.",
+        btn_contact: "Contact Us",
+        contact_title: "Contact Us",
+        contact_subtitle: "Questions about AIS, licensing, or support? We’d be glad to hear from you.",
+        contact_get: "Get in touch",
+        contact_intro: "Whether you need more information about deploying AIS in your organisation or have a technical question, our team is here to help.",
+        contact_email: "Email",
+        contact_phone: "Phone",
+        contact_office: "Office",
+        contact_office_hours: "Business Services Division<br>Available Mon–Fri, 09:00–17:00",
+        form_name: "Full name",
+        form_name_ph: "Your name",
+        form_email: "Email address",
+        form_email_ph: "you@company.com",
+        form_subject: "Subject",
+        form_subject_ph: "How can we help?",
+        form_message: "Message",
+        form_message_ph: "Tell us a bit more…",
+        form_submit: "Send Message",
+        form_thanks: "Thank you for your message! We will contact you soon.",
+        footer_tagline: "Secure, organised invoice exchange between Sellers and Purchasers.",
+        footer_product: "Product",
+        footer_support: "Support",
+        footer_company: "Company",
+        footer_demo: "Request Demo",
+        footer_help: "Technical Help",
+        footer_privacy: "Privacy",
+        footer_terms: "Terms of Use",
+        footer_copy: "© 2026 Account Intelligence Stream. All rights reserved."
+      },
+      bg: {
+        logo: "Account Intelligence Stream",
+        nav_home: "Начало",
+        nav_about: "За нас",
+        nav_features: "Функции",
+        nav_how: "Как работи",
+        nav_contact: "Контакти",
+        nav_download: "Изтегли AIS",
+        hero_img_alt: "Трансфер на фактури – интелигентен автоматизиран процес",
+        hero_title: "Сигурен обмен на фактури<br>за <span>Продавачи и Купувачи</span>",
+        hero_desc: "Account Intelligence Stream позволява на бизнесите да изпращат и получават фактури надеждно — с автоматична доставка, съобщения и контрол на пространството.",
+        btn_download: "Изтегли AIS",
+        btn_explore: "Разгледай функциите",
+        about_title: "За AIS",
+        about_subtitle: "Фокусиран инструмент за ясен и контролиран обмен на фактури между търговски партньори.",
+        about_h3: "Създаден за ежедневна бизнес употреба",
+        about_p1: "AIS (Account Intelligence Stream) е десктоп приложение, което помага на Продавачите да доставят фактури на Купувачите и позволява на Купувачите да ги събират — без да разчитат на имейл вериги или споделени дискове.",
+        about_p2: "И двете страни поддържат свои списъци с търговски партньори. Фактурите се движат през сигурен канал с ясни правила за именуване, ограничения за размер и квоти за пространство на Продавач.",
+        about_li1: "Отделни списъци за Продавачи и Купувачи",
+        about_li2: "Изпращане и получаване с едно кликване",
+        about_li3: "Планирано автоматично получаване",
+        about_li4: "Кратки съобщения между страните",
+        about_li5: "Видимост и прилагане на лимити за натоварване",
+        stat1: "Текуща версия",
+        stat2: "Роли: Продавач и Купувач",
+        stat3: "Автоматично изчистване на стари файлове",
+        stat4: "Макс. размер на файл за фактура",
+        features_title: "Ключови функции",
+        features_subtitle: "Всичко необходимо за управление на потока от фактури между вашите търговски партньори.",
+        feat1_title: "Списъци Продавачи и Купувачи",
+        feat1_desc: "Поддържайте ясни списъци с бизнесите, на които изпращате фактури, и тези, които ви изпращат. Добавяйте, редактирайте или премахвайте партньори по всяко време.",
+        feat2_title: "Изпращане на фактури",
+        feat2_desc: "Подгответе папките на Продавача и качете нови фактури с едно действие. Приемат се само валидни PDF фактури с 10-цифрени номера и одобрени текстови файлове.",
+        feat3_title: "Получаване на фактури",
+        feat3_desc: "Изтеглете нови фактури от вашите Продавачи в организирани локални папки, сортирани по двойки Продавач–Купувач.",
+        feat4_title: "Автоматично получаване",
+        feat4_desc: "Включете планирани изтегляния, за да проверява AIS за нови фактури в определени часове през деня — без ръчни кликове.",
+        feat5_title: "Съобщения",
+        feat5_desc: "Оставяйте кратки писмени бележки за Продавач или Купувач. Червен маркер на бутона Съобщение показва, когато има непрочетена бележка.",
+        feat6_title: "Лимити за пространство и натоварване",
+        feat6_desc: "Всеки Продавач има определена квота за пространство. Проверявайте Лимит на натоварване, Потребление и оставащо свободно място преди изпращане.",
+        feat7_title: "Вградено ръководство",
+        feat7_desc: "Отворете пълното потребителско ръководство на AIS (F1 помощ е налична в цялото приложение) за стъпка по стъпка указания за всяка функция.",
+        feat8_title: "Чист и сигурен канал",
+        feat8_desc: "Нестандартни или прекалено големи файлове се филтрират. Остарели фактури по-стари от 24 часа се изчистват автоматично, за да се поддържа каналът подреден.",
+        how_title: "Как работи",
+        how_subtitle: "Ясен работен процес и за двете страни на обмена на фактури.",
+        step1_title: "Настройте списъците си",
+        step1_desc: "Добавете вашите Продавачи (бизнеси, на които фактурирате) и Купувачи (бизнеси, които ви фактурират) в специализираните редактори на списъци.",
+        step2_title: "Поставете фактурите",
+        step2_desc: "Поставете готовите за изпращане фактури в правилните локални папки Продавач/Купувач, използвайки изискваната конвенция за именуване.",
+        step3_title: "Изпратете или Получете",
+        step3_desc: "Използвайте „Изпрати фактури“ за качване или „Получи фактури“ за изтегляне. Опционалното автоматично получаване работи по график.",
+        step4_title: "Бъдете информирани",
+        step4_desc: "Проверявайте използването на пространството, обменяйте кратки съобщения и премествайте завършените фактури в собствен архив.",
+        download_title: "Изтегли AIS",
+        download_subtitle: "Вземете най-новата версия на Account Intelligence Stream за Windows.",
+        download_desc: "Десктоп приложение за Windows<br>Включва потребителско ръководство и файлове за инсталация",
+        download_note: "Безплатно за регистрирани потребители · Windows 10 / 11",
+        cta_title: "Готови ли сте да оптимизирате обмена на фактури?",
+        cta_desc: "AIS поддържа процеса прост и за Продавачи, и за Купувачи — с ясни контроли и минимални усилия.",
+        btn_contact: "Свържете се с нас",
+        contact_title: "Контакти",
+        contact_subtitle: "Въпроси за AIS, лицензиране или поддръжка? Ще се радваме да чуем от вас.",
+        contact_get: "Свържете се с нас",
+        contact_intro: "Независимо дали се нуждаете от повече информация за внедряване на AIS във вашата организация или имате технически въпрос, нашият екип е тук, за да помогне.",
+        contact_email: "Имейл",
+        contact_phone: "Телефон",
+        contact_office: "Офис",
+        contact_office_hours: "Отдел бизнес услуги<br>На разположение пн–пт, 09:00–17:00",
+        form_name: "Пълно име",
+        form_name_ph: "Вашето име",
+        form_email: "Имейл адрес",
+        form_email_ph: "you@company.com",
+        form_subject: "Тема",
+        form_subject_ph: "Как можем да помогнем?",
+        form_message: "Съобщение",
+        form_message_ph: "Разкажете ни малко повече…",
+        form_submit: "Изпрати съобщение",
+        form_thanks: "Благодарим за вашето съобщение! Ще се свържем с вас скоро.",
+        footer_tagline: "Сигурен и организиран обмен на фактури между Продавачи и Купувачи.",
+        footer_product: "Продукт",
+        footer_support: "Поддръжка",
+        footer_company: "Компания",
+        footer_demo: "Заявка за демо",
+        footer_help: "Техническа помощ",
+        footer_privacy: "Поверителност",
+        footer_terms: "Условия за ползване",
+        footer_copy: "© 2026 Account Intelligence Stream. Всички права запазени."
+      }
+    };
+
+    let currentLang = localStorage.getItem('ais-lang') || 'en';
+
+    function setLanguage(lang) {
+      currentLang = lang;
+      localStorage.setItem('ais-lang', lang);
+      document.documentElement.lang = lang;
+
+      document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.lang === lang);
+      });
+
+      const t = translations[lang];
+
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (t[key] !== undefined) el.innerHTML = t[key];
+      });
+
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        if (t[key] !== undefined) el.placeholder = t[key];
+      });
+
+      document.querySelectorAll('[data-i18n-alt]').forEach(el => {
+        const key = el.getAttribute('data-i18n-alt');
+        if (t[key] !== undefined) el.alt = t[key];
+      });
+
+      document.title = lang === 'bg'
+        ? 'AIS – Account Intelligence Stream | Сигурен обмен на фактури'
+        : 'AIS – Account Intelligence Stream';
+    }
+
+    setLanguage(currentLang);
+
+    document.querySelectorAll('nav a').forEach(link => {
+      link.addEventListener('click', () => {
+        document.querySelector('nav ul').classList.remove('open');
+      });
+    });
+
+    const sections = document.querySelectorAll('section[id]');
+    window.addEventListener('scroll', () => {
+      const scrollY = window.scrollY + 100;
+      sections.forEach(sec => {
+        const top = sec.offsetTop;
+        const height = sec.offsetHeight;
+        const id = sec.getAttribute('id');
+        const link = document.querySelector(`nav a[href="#${id}"]`);
+        if (link) {
+          if (scrollY >= top && scrollY < top + height) link.classList.add('active');
+          else link.classList.remove('active');
+        }
+      });
+    });
+  </script>
 </body>
 </html>
