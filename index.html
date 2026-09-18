@@ -488,7 +488,7 @@
   <!-- ========== HERO ========== -->
   <section class="hero" id="home">
     <div class="hero-content">
-      <img src="MANUAL_BG.jpg" alt="Invoice transfer – intelligent automated process" class="hero-diagram" data-i18n-alt="hero_img_alt" style="max-width:100%; height:auto;">
+      <img id="hero-diagram" src="MANUAL_EN.jpg" alt="Invoice transfer – intelligent automated process" class="hero-diagram" data-i18n-alt="hero_img_alt" style="max-width:100%; height:auto;">
       <h1 data-i18n="hero_title">Secure Invoice Exchange<br>for <span>Sellers & Purchasers</span></h1>
       <p data-i18n="hero_desc">Account Intelligence Stream lets businesses send and receive invoices reliably — with automatic delivery, messaging, and space controls built in.</p>
       <div class="hero-buttons">
@@ -985,6 +985,12 @@
         const key = el.getAttribute('data-i18n-alt');
         if (t[key] !== undefined) el.alt = t[key];
       });
+
+      // Switch hero diagram image based on language
+      const heroImg = document.getElementById('hero-diagram');
+      if (heroImg) {
+        heroImg.src = lang === 'bg' ? 'MANUAL_BG.png' : 'MANUAL_EN.jpg';
+      }
 
       document.title = lang === 'bg'
         ? 'AIS – Account Intelligence Stream | Сигурен обмен на фактури'
